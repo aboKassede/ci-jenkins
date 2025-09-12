@@ -1,122 +1,190 @@
 pipeline {
-    
-	agent any
-	
-	tools {
-	jdk "JDK17"	
+    agent any
+
+    tools {
+        jdk "JDK17"
         maven "MAVEN3.9"
     }
-	
+
     environment {
-        NEXUS_VERSION = "nexus3"
-        NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "172.31.40.209:8081"
-        NEXUS_REPOSITORY = "vprofile-release"
-	NEXUS_REPO_ID    = "vprofile-release"
-        NEXUS_CREDENTIAL_ID = "nexuslogin"
-        ARTVERSION = "${env.BUILD_ID}"
-    }
-	
-    stages{
+        MAVEN_SETTINGS = 'settings.xml'
+        SONAR_SCANNER = tool 'sonarscanner4'
+
+        NEXUS_URL = 'http://172.31.26.78'
+        NEXUS_CREDENTIALS = 'Nexus-Credentials'
+        NEXUS-USER = 'admin'
+        NEXUS-PASS = 'admin123'
+
+        NEXUS_REPO = 'nexus-hosted-artifact'           // Change to 'maven-snapshots' if needed
+        NEXUSPORT = '8081'
+        NEXUS_PROXY = 'nexus-proxy-repo'
+
+
+        GROUP_ID = 'QA'
+        ARTIFACT_ID = 'vprofileMahmmod'
         
-        stage('BUILD'){
+
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('BUILD') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                sh "mvn -s ${MAVEN_SETTINGS} clean install -DskipTests"
             }
             post {
                 success {
-                    echo 'Now Archiving...'
-                    archiveArtifacts artifacts: '**/target/*.war'
+                    echo 'Build successful, now archiving artifacts...'
+                    archiveArtifacts artifacts: 'target/*.war', fingerprint: true
+                }
+                failure {
+                    echo 'Build failed!'
                 }
             }
         }
 
-	stage('UNIT TEST'){
+        stage('UNIT TEST') {
             steps {
-                sh 'mvn test'
-            }
-        }
-
-	stage('INTEGRATION TEST'){
-            steps {
-                sh 'mvn verify -DskipUnitTests'
-            }
-        }
-		
-        stage ('CODE ANALYSIS WITH CHECKSTYLE'){
-            steps {
-                sh 'mvn checkstyle:checkstyle'
+                sh "mvn -s ${MAVEN_SETTINGS} test"
             }
             post {
                 success {
-                    echo 'Generated Analysis Result'
+                    junit 'target/surefire-reports/*.xml'
+                }
+                failure {
+                    echo 'Unit tests failed!'
                 }
             }
         }
 
-        stage('CODE ANALYSIS with SONARQUBE') {
-          
-		  environment {
-             scannerHome = tool 'sonarscanner4'
-          }
-
-          steps {
-            withSonarQubeEnv('sonar-pro') {
-               sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                   -Dsonar.projectName=vprofile-repo \
-                   -Dsonar.projectVersion=1.0 \
-                   -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
-                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+        stage('INTEGRATION TEST') {
+            steps {
+                sh "mvn -s ${MAVEN_SETTINGS} verify -DskipUnitTests"
             }
-
-            timeout(time: 10, unit: 'MINUTES') {
-               waitForQualityGate abortPipeline: true
+            post {
+                success {
+                    echo 'Integration tests passed!'
+                }
+                failure {
+                    echo 'Integration tests failed!'
+                }
             }
-          }
         }
 
-        stage("Publish to Nexus Repository Manager") {
+        stage('CODE ANALYSIS WITH CHECKSTYLE') {
+            steps {
+                sh "mvn -s ${MAVEN_SETTINGS} checkstyle:checkstyle"
+            }
+            post {
+                success {
+                    echo 'Checkstyle report generated.'
+                    archiveArtifacts artifacts: 'target/checkstyle-result.xml', allowEmptyArchive: true
+                }
+                failure {
+                    echo 'Checkstyle failed!'
+                }
+            }
+        }
+
+        stage('CODE ANALYSIS WITH SONARQUBE') {
+            environment {
+                SCANNER_HOME = tool 'sonarscanner4'
+                SONAR_PROJECT_KEY = 'ci-project'
+                SONAR_PROJECT_NAME = 'ci-project'
+                SONAR_PROJECT_VERSION = '1.0'
+                SONAR_SOURCES = 'src/'
+                SONAR_BINARIES = 'target/classes/'
+                SONAR_JUNIT_REPORTS = 'target/surefire-reports/'
+                SONAR_JACOCO_REPORTS = 'target/jacoco.exec'
+                SONAR_CHECKSTYLE_REPORT = 'target/checkstyle-result.xml'
+            }
+            steps {
+                withSonarQubeEnv('sonarserver') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} \
+                        -Dsonar.sources=${SONAR_SOURCES} \
+                        -Dsonar.java.binaries=${SONAR_BINARIES} \
+                        -Dsonar.junit.reportsPath=${SONAR_JUNIT_REPORTS} \
+                        -Dsonar.jacoco.reportPaths=${SONAR_JACOCO_REPORTS} \
+                        -Dsonar.java.checkstyle.reportPaths=${SONAR_CHECKSTYLE_REPORT}
+                    """
+                }
+                
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+            post {
+                success {
+                    echo 'SonarQube analysis completed.'
+                }
+                failure {
+                    echo 'SonarQube analysis failed or Quality Gate not passed.'
+                }
+            }
+        }
+
+
+
+        stage('Upload Artifacts to Nexus') {
+
             steps {
                 script {
-                    pom = readMavenPom file: "pom.xml";
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
-                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                    artifactPath = filesByGlob[0].path;
-                    artifactExists = fileExists artifactPath;
-                    if(artifactExists) {
-                        echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${pom.version} ARTVERSION";
-                        nexusArtifactUploader(
-                            nexusVersion: NEXUS_VERSION,
-                            protocol: NEXUS_PROTOCOL,
-                            nexusUrl: NEXUS_URL,
-                            groupId: pom.groupId,
-                            version: ARTVERSION,
-                            repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIAL_ID,
-                            artifacts: [
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: artifactPath,
-                                type: pom.packaging],
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: "pom.xml",
-                                type: "pom"]
-                            ]
-                        );
-                    } 
-		    else {
-                        error "*** File: ${artifactPath}, could not be found";
-                    }
+                    // Generate version dynamically using BUILD_NUMBER
+                    def artifactVersion = "1.0.${env.BUILD_NUMBER}"
+
+                    // Find the WAR file in target dynamically
+                    def warFile = sh(script: "ls target/*.war | head -n 1", returnStdout: true).trim()
+
+                    // Rename it with BUILD_NUMBER version
+                    sh "mv ${warFile} target/${ARTIFACT_ID}-${artifactVersion}.war"
+
+                    // Upload artifact to Nexus
+                    nexusArtifactUploader artifacts: [
+                        [
+                            artifactId: "${ARTIFACT_ID}",
+                            classifier: '',
+                            file: "target/${ARTIFACT_ID}-${artifactVersion}.war",
+                            type: 'war'
+                        ]
+                    ],
+                    credentialsId: "${NEXUS_CREDENTIALS}",
+                    groupId: "${GROUP_ID}",
+                    nexusUrl: "${NEXUS_URL}",
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    repository: "${NEXUS_REPO}",
+                    version: artifactVersion
+                }
+            }
+            post {
+                success {
+                    echo "Artifact ${ARTIFACT_ID}-${artifactVersion}.war uploaded to Nexus successfully."
+                }
+                failure {
+                    echo "Failed to upload artifact to Nexus."
                 }
             }
         }
 
-
     }
 
-
+    post {
+        always {
+            slackSend (
+                channel: '#your-channel-name', // Specify your Slack channel
+                message: "Pipeline ${currentBuild.fullDisplayName} finished with status: ${currentBuild.currentResult}",
+                color: "${currentBuild.currentResult == 'SUCCESS' ? 'good' : 'danger'}"
+            )
+        }
+    }
 }
