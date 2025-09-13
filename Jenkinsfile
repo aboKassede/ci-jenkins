@@ -89,84 +89,91 @@ pipeline {
                 }
             }
         }
-
-        // stage('CODE ANALYSIS WITH SONARQUBE') {
-        //     environment {
-        //         SCANNER_HOME = tool 'sonarscanner4'
-        //         SONAR_PROJECT_KEY = 'ci-project'
-        //         SONAR_PROJECT_NAME = 'ci-project'
-        //         SONAR_PROJECT_VERSION = '1.0'
-        //         SONAR_SOURCES = 'src/'
-        //         SONAR_BINARIES = 'target/classes/'
-        //         SONAR_JUNIT_REPORTS = 'target/surefire-reports/'
-        //         SONAR_JACOCO_REPORTS = 'target/jacoco.exec'
-        //         SONAR_CHECKSTYLE_REPORT = 'target/checkstyle-result.xml'
-        //         JAVA_HOME = tool 'JDK11'
-        //         PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        //     }
-        //     steps {
-        //         withSonarQubeEnv('sonarserver') {
-        //             sh """
-        //                 java -version   # ✅ Verify JDK 11 is used
-        //                 ${SCANNER_HOME}/bin/sonar-scanner \
-        //                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-        //                 -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-        //                 -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} \
-        //                 -Dsonar.sources=${SONAR_SOURCES} \
-        //                 -Dsonar.java.binaries=${SONAR_BINARIES} \
-        //                 -Dsonar.junit.reportsPath=${SONAR_JUNIT_REPORTS} \
-        //                 -Dsonar.jacoco.reportPaths=${SONAR_JACOCO_REPORTS} \
-        //                 -Dsonar.java.checkstyle.reportPaths=${SONAR_CHECKSTYLE_REPORT}
-        //             """
-        //         }
-                
-        //         timeout(time: 10, unit: 'MINUTES') {
-        //             waitForQualityGate abortPipeline: true
-        //         }
-        //     }
-        //     post {
-        //         success {
-        //             echo 'SonarQube analysis completed.'
-        //         }
-        //         failure {
-        //             echo 'SonarQube analysis failed or Quality Gate not passed.'
-        //         }
-        //     }
-        // }
+//////////////////////////////////
         stage('CODE ANALYSIS WITH SONARQUBE') {
+            environment {
+                SCANNER_HOME = tool 'sonarscanner4'
+                SONAR_PROJECT_KEY = 'ci-project'
+                SONAR_PROJECT_NAME = 'ci-project'
+                SONAR_PROJECT_VERSION = '1.0'
+                SONAR_SOURCES = 'src/'
+                SONAR_BINARIES = 'target/classes/'
+                SONAR_JUNIT_REPORTS = 'target/surefire-reports/'
+                SONAR_JACOCO_REPORTS = 'target/jacoco.exec'
+                SONAR_CHECKSTYLE_REPORT = 'target/checkstyle-result.xml'
+            }
             steps {
                 withSonarQubeEnv('sonarserver') {
                     script {
                         // Resolve JDK 11 and Sonar Scanner paths
                         def jdk11Home = tool 'JDK11'
                         def sonarScannerHome = tool 'sonarscanner4'
-
-                        // Run Sonar Scanner with JDK 11 using withEnv
                         withEnv(["JAVA_HOME=${jdk11Home}", "PATH=${jdk11Home}/bin:${env.PATH}"]) {
+
                             sh """
-                                java -version   # ✅ confirm JDK 11 is used
-                                ${sonarScannerHome}/bin/sonar-scanner \
-                                    -Dsonar.projectKey=ci-project \
-                                    -Dsonar.projectName=ci-project \
-                                    -Dsonar.projectVersion=1.0 \
-                                    -Dsonar.sources=src/ \
-                                    -Dsonar.java.binaries=target/classes/ \
-                                    -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                                    -Dsonar.jacoco.reportPaths=target/jacoco.exec \
-                                    -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+                                java -version   # ✅ Verify JDK 11 is used
+                                ${SCANNER_HOME}/bin/sonar-scanner \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                                -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} \
+                                -Dsonar.sources=${SONAR_SOURCES} \
+                                -Dsonar.java.binaries=${SONAR_BINARIES} \
+                                -Dsonar.junit.reportsPath=${SONAR_JUNIT_REPORTS} \
+                                -Dsonar.jacoco.reportPaths=${SONAR_JACOCO_REPORTS} \
+                                -Dsonar.java.checkstyle.reportPaths=${SONAR_CHECKSTYLE_REPORT}
                             """
                         }
                     }
                 }
+                
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
             post {
-                success { echo 'SonarQube analysis completed.' }
-                failure { echo 'SonarQube analysis failed or Quality Gate not passed.' }
+                success {
+                    echo 'SonarQube analysis completed.'
+                }
+                failure {
+                    echo 'SonarQube analysis failed or Quality Gate not passed.'
+                }
             }
         }
+//////////////////////////////////
+        // stage('CODE ANALYSIS WITH SONARQUBE') {
+        //     steps {
+        //         withSonarQubeEnv('sonarserver') {
+        //             script {
+        //                 // Resolve JDK 11 and Sonar Scanner paths
+        //                 def jdk11Home = tool 'JDK11'
+        //                 def sonarScannerHome = tool 'sonarscanner4'
+
+        //                 // Run Sonar Scanner with JDK 11 using withEnv
+        //                 withEnv(["JAVA_HOME=${jdk11Home}", "PATH=${jdk11Home}/bin:${env.PATH}"]) {
+        //                     sh """
+        //                         java -version   # ✅ confirm JDK 11 is used
+        //                         ${sonarScannerHome}/bin/sonar-scanner \
+        //                             -Dsonar.projectKey=ci-project \
+        //                             -Dsonar.projectName=ci-project \
+        //                             -Dsonar.projectVersion=1.0 \
+        //                             -Dsonar.sources=src/ \
+        //                             -Dsonar.java.binaries=target/classes/ \
+        //                             -Dsonar.junit.reportsPath=target/surefire-reports/ \
+        //                             -Dsonar.jacoco.reportPaths=target/jacoco.exec \
+        //                             -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+        //                     """
+        //                 }
+        //             }
+        //         }
+        //         timeout(time: 10, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true
+        //         }
+        //     }
+        //     post {
+        //         success { echo 'SonarQube analysis completed.' }
+        //         failure { echo 'SonarQube analysis failed or Quality Gate not passed.' }
+        //     }
+        // }
 
 
 
