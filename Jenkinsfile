@@ -107,6 +107,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarserver') {
                     sh """
+                        java -version   # ✅ Verify JDK 11 is used
                         ${SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
