@@ -21,7 +21,7 @@
         <mirror>
             <id>${NEXUS_PROXY}</id>
             <name>${NEXUS_PROXY}</name>
-            <url>${NEXUS_URL}:${NEXUSPORT}/repository/${NEXUS_PROXY}/</url>
+            <url>http://${NEXUS_IP}:${NEXUSPORT}/repository/${NEXUS_PROXY}/</url>
             <mirrorOf>*</mirrorOf>
         </mirror>
     </mirrors>
