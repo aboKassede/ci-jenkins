@@ -101,6 +101,8 @@ pipeline {
                 SONAR_JUNIT_REPORTS = 'target/surefire-reports/'
                 SONAR_JACOCO_REPORTS = 'target/jacoco.exec'
                 SONAR_CHECKSTYLE_REPORT = 'target/checkstyle-result.xml'
+                JAVA_HOME = tool 'JDK11'
+                PATH = "${JAVA_HOME}/bin:${env.PATH}"
             }
             steps {
                 withSonarQubeEnv('sonarserver') {
