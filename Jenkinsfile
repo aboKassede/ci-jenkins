@@ -176,20 +176,20 @@ pipeline {
             steps {
                 script {
                     // Generate version dynamically using BUILD_NUMBER
-                    def artifactVersion = "1.0.${env.BUILD_NUMBER}"
+                    env.ARTIFACT_VERSION = "1.0.${env.BUILD_NUMBER}"
 
                     // Find the WAR file in target dynamically
                     def warFile = sh(script: "ls target/*.war | head -n 1", returnStdout: true).trim()
 
                     // Rename it with BUILD_NUMBER version
-                    sh "mv ${warFile} target/${ARTIFACT_ID}-${artifactVersion}.war"
+                    sh "mv ${warFile} target/${ARTIFACT_ID}-${env.ARTIFACT_VERSION}.war"
 
                     // Upload artifact to Nexus
                     nexusArtifactUploader artifacts: [
                         [
                             artifactId: "${ARTIFACT_ID}",
                             classifier: '',
-                            file: "target/${ARTIFACT_ID}-${artifactVersion}.war",
+                            file: "target/${ARTIFACT_ID}-${env.ARTIFACT_VERSION}.war",
                             type: 'war'
                         ]
                     ],
@@ -199,12 +199,12 @@ pipeline {
                     nexusVersion: 'nexus3',
                     protocol: 'http',
                     repository: "${NEXUS_REPO}",
-                    version: artifactVersion
+                    version: env.ARTIFACT_VERSION
                 }
             }
             post {
                 success {
-                    echo "Artifact ${ARTIFACT_ID}-${artifactVersion}.war uploaded to Nexus successfully."
+                    echo "Artifact ${ARTIFACT_ID}-${env.ARTIFACT_VERSION}.war uploaded to Nexus successfully."
                 }
                 failure {
                     echo "Failed to upload artifact to Nexus."
