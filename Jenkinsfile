@@ -181,7 +181,7 @@ pipeline {
     post {
         always {
             slackSend (
-                channel: '#your-channel-name', // Specify your Slack channel
+                channel: '#jenkins-channel', // Specify your Slack channel
                 message: "Pipeline ${currentBuild.fullDisplayName} finished with status: ${currentBuild.currentResult}",
                 color: "${currentBuild.currentResult == 'SUCCESS' ? 'good' : 'danger'}"
             )
