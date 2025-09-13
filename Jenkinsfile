@@ -10,7 +10,7 @@ pipeline {
         MAVEN_SETTINGS = 'settings.xml'
         SONAR_SCANNER = tool 'sonarscanner4'
 
-        NEXUS_URL = 'http://172.31.26.78:8081'
+        NEXUS_URL = 'http://172.31.26.78'
         NEXUS_CREDENTIALS = 'Nexus-Credentials'
         NEXUS_USER = 'admin'
         NEXUS_PASS = 'admin123'
