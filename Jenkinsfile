@@ -15,7 +15,8 @@ pipeline {
         NEXUS_USER = 'admin'
         NEXUS_PASS = 'admin123'
 
-        NEXUS_REPO = 'nexus-hosted-artifact'           // Change to 'maven-snapshots' if neede
+        NEXUS_REPO = 'nexus-hosted-artifact'           // Change to 'maven-snapshots' if needed
+        NEXUSPORT = '8081'
         NEXUS_PROXY = 'nexus-proxy-repo'
 
 
