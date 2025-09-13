@@ -12,8 +12,8 @@ pipeline {
 
         NEXUS_URL = 'http://172.31.26.78'
         NEXUS_CREDENTIALS = 'Nexus-Credentials'
-        NEXUS-USER = 'admin'
-        NEXUS-PASS = 'admin123'
+        NEXUS_USER = 'admin'
+        NEXUS_PASS = 'admin123'
 
         NEXUS_REPO = 'nexus-hosted-artifact'           // Change to 'maven-snapshots' if needed
         NEXUSPORT = '8081'

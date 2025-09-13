@@ -6,16 +6,16 @@
     <servers>
         <server>
             <id>${NEXUS_PROXY}</id>
-            <username>${NEXUS-USER}</username>
-            <password>${NEXUS-PASS}</password>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASS}</password>
         </server>
     </servers>
 
     <servers>
         <server>
             <id>${NEXUS_REPO}</id>
-            <username>${NEXUS-USER}</username>
-            <password>${NEXUS-PASS}</password>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASS}</password>
         </server>
     </servers>
 
