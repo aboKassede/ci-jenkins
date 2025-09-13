@@ -9,9 +9,7 @@
             <username>${NEXUS_USER}</username>
             <password>${NEXUS_PASS}</password>
         </server>
-    </servers>
-
-    <servers>
+    
         <server>
             <id>${NEXUS_REPO}</id>
             <username>${NEXUS_USER}</username>
