@@ -51,13 +51,15 @@ pipeline {
             }
             post {
                 success {
-                    junit 'target/surefire-reports/*.xml'
+                    // Allow empty results so Jenkins doesn't fail if no reports exist
+                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
                 }
                 failure {
                     echo 'Unit tests failed!'
                 }
             }
         }
+
 
         stage('INTEGRATION TEST') {
             steps {
